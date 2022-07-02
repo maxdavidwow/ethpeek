@@ -7,19 +7,73 @@
 
 ethlink.styled {
   display: inline;
-  text-decoration: underline;
-  color: #3498db;
   cursor: pointer;
+}
+
+ethlink.styled>a {
+  text-decoration: underline !important;
+  color: #3498db !important;
 }
 
 .tippy-box[data-theme~='linkthereum'] {
   font-family: 'Open Sans';
-  font-size: 14px;
+  font-size: 12px;
 
   border-radius: 4px;
 
-  background: #59759c;
+  background: #293444;
   color: white;
 
-  padding: 6px 8px;
+  padding: 6px;
+}
+
+ethtooltip>.header {
+  background: #576578;
+  border-radius: 4px;
+  padding: 0px 4px;
+  max-width: 30ch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+ethtooltip>.balance {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+ethtooltip>.tokensvalue {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+ethtooltip>.tokens {
+  font-size: 12px;
+  margin-top: 4px;
+  /* background: #576578; */
+  /* border-radius: 4px; */
+  /* padding: 0px 4px; */
+}
+
+ethtooltip>.tokens>.token {
+  display: flex;
+  justify-content: space-between;
+}
+
+ethtooltip>.tokens>.token>span>img {
+  width: 12px;
+  height: 12px;
+  margin-bottom: -1px;
+  margin-right: 4px;
+}
+
+ethtooltip>.tokens>.token>span>.symbol {
+  min-width: 5ch;
+  display: inline-block;
 }

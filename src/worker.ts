@@ -66,16 +66,16 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
 
     const tokens = Array.from(ethscan.querySelectorAll('.list-custom-ERC20'))
       .map(li => {
-        const names = li.querySelector<HTMLSpanElement>('.list-name')?.innerText?.split(' (');
-        const img = li.querySelector('img')?.src;
+        const symbol = li.querySelector<HTMLSpanElement>('.list-name')?.innerText?.split(' (')?.[1]?.replace(')', '');
+        const img = 'https://etherscan.io/token/' + li.querySelector('img')?.src?.split('/token')?.[1];
         const amount = parseValue(li.querySelector<HTMLSpanElement>('.list-amount')?.innerText?.split(' ')?.[0]);
         const value = parseValue(li.querySelector<HTMLSpanElement>('.list-usd-value')?.innerText);
-        return { symbol: names?.[1]?.replace(')', ''), name: names?.[0], img, amount, value };
+        return { symbol, img, amount, value };
       })
       .sort((a, b) => a.value - b.value)
-      .slice(-5)
+      .slice(-3)
       .reverse();
-    const allTokensValue = parseValue(ethscan.querySelector<HTMLAnchorElement>('#availableBalanceDropdown')?.innerText?.replace('>', '')?.split('>')?.[0]);
+    const allTokensValue = parseValue(ethscan.querySelector<HTMLAnchorElement>('#availableBalanceDropdown')?.innerText?.split('$')?.[1].split('.')?.[0]);
     const tokenValue = tokens.reduce((p, c) => p + c.value, 0);
 
     if (ensPromise! !== undefined) await ensPromise;

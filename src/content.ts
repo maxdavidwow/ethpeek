@@ -1,5 +1,8 @@
 import { hookTooltip } from "./tooltip";
 
+function isTooltip(node: HTMLElement) {
+  return node.className.includes('tooltip');
+}
 function isUnsuitable(node: HTMLElement) {
   switch (node.tagName) {
     case 'NOSCRIPT':
@@ -11,7 +14,7 @@ function isUnsuitable(node: HTMLElement) {
     case 'ETHTOOLTIP':
       return true;
     default:
-      return false;
+      return isTooltip(node);
   }
 }
 function hasValidParent(text: Text) {
@@ -65,15 +68,22 @@ function scan(nodeToScan: Node) {
     for (const child of d.childNodes) {
       if ((child as Element)?.tagName === 'ETHLINK') {
         hookTooltip(child as HTMLSpanElement);
-        if (!insideLink) (child as Element).className = 'styled';
+        if (!insideLink) {
+          (child as Element).className = 'styled';
+          const id = (child as HTMLSpanElement).innerText;
+          const a = document.createElement('a');
+          a.href = id.startsWith('0x') ? `https://etherscan.io/address/${id}` : `https://etherscan.io/enslookup-search?search=${id}`;
+          a.innerText = id;
+          child.childNodes[0].replaceWith(a);
+        }
       }
     }
     replacement[1].replaceWith(...d.childNodes);
   }
-  const ms = ((performance.now() - start));
-  if (ms > 1 || replacements.length > 0) {
-    console.log(ms.toFixed(0) + 'ms', replacements);
-  }
+  // const ms = ((performance.now() - start));
+  // if (ms > 1 || replacements.length > 0) {
+  //   console.log(ms.toFixed(0) + 'ms', replacements);
+  // }
 }
 
 // initial scan
