@@ -1,5 +1,9 @@
 import tippy from 'tippy.js';
 
+const amount = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+const ether = new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 });
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+
 export function hookTooltip(el: HTMLSpanElement) {
   const id = el.innerText.trim();
 
@@ -21,7 +25,7 @@ export function hookTooltip(el: HTMLSpanElement) {
           img: string,
           symbol: string,
           value: number
-        }[], tokensValue?: number, failed?: boolean
+        }[], tokensValue?: number, tokenCount: number, failed?: boolean
       }) => {
         // console.log(info);
         if (info.failed) {
@@ -29,13 +33,15 @@ export function hookTooltip(el: HTMLSpanElement) {
         } else {
           instance?.setContent(`<ethtooltip>
             <div class="header">${info.ens ? (info.ens + ' / ') : ''}${info.address}</div>
-            <div class="balance"><span>Ξ${info.ether.toFixed(4)}</span><span>$${info.etherValue.toFixed(0)}</span></div>
-            <div class="tokensvalue"><span>Tokens</span><span>$${info.tokensValue?.toFixed(0)}</span></div>
-            <div class="tokens">
-              ${info.tokens?.map(token => `<div class="token">
-              <span><img src="${token.img}"/><div class="symbol">${token.symbol}</div> ${token.amount.toFixed(0)}</span><span>$${token.value.toFixed(0)}</span></div>`).join('')}
-              ${info.remainingTokensValue ? `<div class="token"><span>Other tokens</span><span>$${info.remainingTokensValue?.toFixed(0)}</span></div>` : ''}
-            </div>
+            <div class="balance"><span>Ξ${ether.format(info.ether)}</span><span>${usd.format(info.etherValue)}</span></div>
+            <div class="tokensvalue"><span>${info.tokenCount > 99 ? '>100' : info.tokenCount} tokens</span><span>${usd.format(info.tokensValue || 0)}</span></div>
+            ${info.tokens?.length ? `
+              <div class="tokens">
+                ${info.tokens?.map(token => `<div class="token">
+                <span><img src="${token.img}"/><div class="symbol">${token.symbol}</div> ${amount.format(token.amount)}</span><span>${usd.format(token.value)}</span></div>`).join('')}
+                ${info.remainingTokensValue ? `<div class="token"><span>Other tokens</span><span>${usd.format(info.remainingTokensValue)}</span></div>` : ''}
+              </div>
+            ` : ''}
           </ethtooltip>`);
         }
       });

@@ -64,8 +64,10 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
       }
     });
 
+    let tokenCount = 0;
     const tokens = Array.from(ethscan.querySelectorAll('.list-custom-ERC20'))
       .map(li => {
+        tokenCount++;
         const symbol = li.querySelector<HTMLSpanElement>('.list-name')?.innerText?.split(' (')?.[1]?.replace(')', '');
         const img = 'https://etherscan.io/token/' + li.querySelector('img')?.src?.split('/token')?.[1];
         const amount = parseValue(li.querySelector<HTMLSpanElement>('.list-amount')?.innerText?.split(' ')?.[0]);
@@ -75,7 +77,7 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
       .sort((a, b) => a.value - b.value)
       .slice(-3)
       .reverse();
-    const allTokensValue = parseValue(ethscan.querySelector<HTMLAnchorElement>('#availableBalanceDropdown')?.innerText?.split('$')?.[1].split('.')?.[0]);
+    const allTokensValue = parseValue(ethscan.querySelector<HTMLAnchorElement>('#availableBalanceDropdown')?.innerText?.split('$')?.[1].split('\n')?.[0]);
     const tokenValue = tokens.reduce((p, c) => p + c.value, 0);
 
     if (ensPromise! !== undefined) await ensPromise;
@@ -86,6 +88,7 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
       ether,
       etherValue,
       tokens,
+      tokenCount,
       tokensValue: allTokensValue,
       remainingTokensValue: allTokensValue > tokenValue ? (allTokensValue - tokenValue) : undefined
     };

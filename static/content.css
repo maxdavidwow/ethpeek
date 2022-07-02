@@ -21,7 +21,7 @@ ethlink.styled>a {
 
   border-radius: 4px;
 
-  background: #293444;
+  background: #2a3546;
   color: white;
 
   padding: 6px;
@@ -31,7 +31,7 @@ ethtooltip>.header {
   background: #576578;
   border-radius: 4px;
   padding: 0px 4px;
-  max-width: 30ch;
+  max-width: 34ch;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -53,12 +53,20 @@ ethtooltip>.tokensvalue {
   margin-top: 2px;
 }
 
+ethtooltip>.tokensvalue>span:first-child {
+  background-color: rgb(85, 118, 189);
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 1px 3px;
+}
+
 ethtooltip>.tokens {
   font-size: 12px;
   margin-top: 4px;
-  /* background: #576578; */
-  /* border-radius: 4px; */
-  /* padding: 0px 4px; */
+
+  padding: 2px 4px;
+  background: #242930;
+  border-radius: 4px;
 }
 
 ethtooltip>.tokens>.token {
@@ -74,6 +82,6 @@ ethtooltip>.tokens>.token>span>img {
 }
 
 ethtooltip>.tokens>.token>span>.symbol {
-  min-width: 5ch;
+  min-width: 5.5ch;
   display: inline-block;
 }
