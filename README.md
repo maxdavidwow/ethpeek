@@ -1,2 +1,2 @@
 # linkthereum
-Chrome extensions for Ethereum addresses
+Chrome extension for Ethereum addresses
