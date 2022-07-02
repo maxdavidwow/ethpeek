@@ -1,0 +1,25 @@
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('chrome-extension://__MSG_@@extension_id__/dist/OpenSans-Regular.ttf') format('ttf');
+}
+
+ethlink.styled {
+  display: inline;
+  text-decoration: underline;
+  color: #3498db;
+  cursor: pointer;
+}
+
+.tippy-box[data-theme~='linkthereum'] {
+  font-family: 'Open Sans';
+  font-size: 14px;
+
+  border-radius: 4px;
+
+  background: #59759c;
+  color: white;
+
+  padding: 6px 8px;
+}
