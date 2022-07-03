@@ -108,15 +108,20 @@ function scan(nodeToScan: Node) {
   // }
 }
 
-requestIdleCallback(() => {
-  // initial scan
-  scan(document.body);
+chrome.storage.sync.get('blacklist', storage => {
+  const isBlocked = storage.blacklist[window.location.origin];
+  if (!isBlocked) {
+    requestIdleCallback(() => {
+      // initial scan
+      scan(document.body);
 
-  new MutationObserver(mutationList => {
-    for (const mutation of mutationList) {
-      for (const addedNode of mutation.addedNodes) {
-        scan(addedNode);
-      }
-    }
-  }).observe(document.body, { attributes: false, childList: true, subtree: true });
-}, { timeout: 6000 });
+      new MutationObserver(mutationList => {
+        for (const mutation of mutationList) {
+          for (const addedNode of mutation.addedNodes) {
+            scan(addedNode);
+          }
+        }
+      }).observe(document.body, { attributes: false, childList: true, subtree: true });
+    }, { timeout: 6000 });
+  }
+});

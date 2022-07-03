@@ -1,10 +1,10 @@
-// import ENS from 'ethjs-ens';
-// import HttpProvider from 'ethjs-provider-http';
-
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.set({
     fetchOnHover: false,
-    requireCntrl: false
+    requireCntrl: false,
+    blacklist: {},
+    ensCache: {},
+    lastEnsReset: Date.now()
   });
 });
 
@@ -33,7 +33,10 @@ function cutStr<T = string>(str: string, startIdx: number, from: string, fromExp
   }
 }
 
-const ENS_MAP: { [addressOrEns: string]: string | Promise<string | null> } = {};
+let ENS_MAP: { [addressOrEns: string]: string | Promise<string | null> } = {};
+chrome.storage.sync.get('ensCache', storage => ENS_MAP = storage.ensCache);
+chrome.runtime.onSuspend.addListener(() => chrome.storage.sync.set({ ensCache: ENS_MAP }));
+
 async function resolveEnsName(id: string) {
   const cached = ENS_MAP[id];
   if (cached) return await Promise.resolve(cached);
@@ -67,7 +70,7 @@ async function reverseEnsLookup(address: string) {
   }
 }
 
-const CACHE: { [addressOrEns: string]: unknown } = {};
+let CACHE: { [addressOrEns: string]: unknown } = {};
 async function fetchAddress(message: any, sendResponse: (response?: any) => void) {
   let address: string | null;
   let ensName: string | null;
@@ -178,6 +181,10 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     case 'ADDRESS_REQUEST':
       fetchAddress(message, sendResponse);
       return true;
+    case 'RESET_CACHE':
+      ENS_MAP = {};
+      CACHE = {};
+      return false;
   }
   return false
 });
