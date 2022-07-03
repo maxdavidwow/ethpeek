@@ -1,5 +1,5 @@
-import ENS from 'ethjs-ens';
-import HttpProvider from 'ethjs-provider-http';
+// import ENS from 'ethjs-ens';
+// import HttpProvider from 'ethjs-provider-http';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.set({
@@ -13,15 +13,65 @@ function parseValue(usd: string | undefined | null) {
   return Number(usd.replace(/\$|,/g, ''));
 }
 
-const parser = new DOMParser();
+function cutStr<T = string>(str: string, startIdx: number, from: string, fromExpand: string | null, to: string, defaultValue: T, regex?: RegExp, format?: (s: string) => T) {
+  try {
+    let idx = str.indexOf(from, startIdx);
+    if (idx === -1) throw -1;
+    idx += from.length;
+    if (fromExpand) {
+      const endIdx = str.indexOf(fromExpand, idx);
+      if (endIdx === -1) throw -1;
+      idx = endIdx + fromExpand.length;
+    }
+    const toIdx = str.indexOf(to, idx);
+    const cut = str.substring(idx, toIdx);
+    const cleaned = regex ? cut.replace(regex, '') : cut;
+    const result = format ? format(cleaned) : cleaned;
+    return [result as T, toIdx] as const;
+  } catch {
+    return [defaultValue, startIdx] as const;
+  }
+}
 
-const ens = new ENS({ provider: new HttpProvider('https://cloudflare-eth.com/'), network: '1' })
+const ENS_MAP: { [addressOrEns: string]: string | Promise<string | null> } = {};
+async function resolveEnsName(id: string) {
+  const cached = ENS_MAP[id];
+  if (cached) return await Promise.resolve(cached);
+  const loopup = new Promise<string | null>(async r => {
+    const res = await fetch('https://etherscan.io/enslookup-search?search=' + id);
+    const ethscan = await res.text();
+    const [address] = cutStr<string | null>(ethscan, 100, `='txtEthereumAddress`, '>', '</span>', null);
+    if (address) {
+      ENS_MAP[address] = id;
+      ENS_MAP[id] = address;
+      r(address);
+    } else {
+      r(null);
+    }
+  });
+  ENS_MAP[id] = loopup;
+  return await loopup;
+}
+async function reverseEnsLookup(address: string) {
+  const cached = ENS_MAP[address];
+  if (cached) return await Promise.resolve(cached);
+  const res = await fetch('https://etherscan.io/enslookup-search?search=' + address);
+  const ethscan = await res.text();
+  const [ens] = cutStr<string | null>(ethscan, 100, `alt='ETH'`, '>', '</span>', null);
+  if (ens) {
+    ENS_MAP[ens] = address;
+    ENS_MAP[address] = ens;
+    return ens;
+  } else {
+    return null;
+  }
+}
+
 const CACHE: { [addressOrEns: string]: unknown } = {};
-
 async function fetchAddress(message: any, sendResponse: (response?: any) => void) {
-  let address: string;
-  let ensName: string;
-  let addressOrEns = message.id;
+  let address: string | null;
+  let ensName: string | null;
+  let addressOrEns = message.id.toLowerCase();
 
   const cached = CACHE[addressOrEns];
   if (cached) {
@@ -30,12 +80,11 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
     return;
   }
 
-  let ensPromise: Promise<unknown>;
   if (addressOrEns.startsWith('0x')) {
     address = addressOrEns;
-    ensPromise = ens.reverse(address).catch(() => undefined).then(name => ensName = name);
+    ensName = await Promise.resolve(ENS_MAP[address!]);
   } else {
-    const resolved = await ens.lookup(addressOrEns).catch(() => undefined);
+    const resolved = await resolveEnsName(addressOrEns);
     if (resolved) {
       address = resolved;
       ensName = addressOrEns;
@@ -51,40 +100,49 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
 
   try {
     const r = await fetch('https://etherscan.io/address/' + address!);
-    const ethscan = parser.parseFromString(await r.text(), 'text/html');
+    let ethscan = (await r.text());
 
-    let ether = 0;
-    let etherValue = 0;
-    ethscan.querySelectorAll<HTMLDivElement>('div.col-md-8').forEach(el => {
-      if (el.innerText?.endsWith(' Ether')) {
-        ether = parseValue(el.innerText.replace(' Ether', ''));
-      }
-      if (el.innerText?.startsWith('$')) {
-        etherValue = parseValue(el.innerText.split(' (')[0]);
-      }
-    });
+    let [tag] = cutStr(ethscan, 0, 'og:title', `="`, 'Address', '');
+    if (tag) tag = tag.substring(0, tag.length - 3);
 
-    let tokenCount = 0;
-    const tokens = Array.from(ethscan.querySelectorAll('.list-custom-ERC20'))
-      .map(li => {
-        tokenCount++;
-        const symbol = li.querySelector<HTMLSpanElement>('.list-name')?.innerText?.split(' (')?.[1]?.replace(')', '');
-        const img = 'https://etherscan.io/token/' + li.querySelector('img')?.src?.split('/token')?.[1];
-        const amount = parseValue(li.querySelector<HTMLSpanElement>('.list-amount')?.innerText?.split(' ')?.[0]);
-        const value = parseValue(li.querySelector<HTMLSpanElement>('.list-usd-value')?.innerText);
-        return { symbol, img, amount, value };
-      })
-      .sort((a, b) => a.value - b.value)
-      .slice(-3)
-      .reverse();
-    const allTokensValue = parseValue(ethscan.querySelector<HTMLAnchorElement>('#availableBalanceDropdown')?.innerText?.split('$')?.[1].split('\n')?.[0]);
+    // cut the dom string to what we need
+    ethscan = ethscan.substring(ethscan.indexOf('col-md-8') - 2);
+
+    const [ether, ethIdx] = cutStr(ethscan, 0, 'col-md-8', '>', '</div>', 0, /\sEther|<b>|<\/b>|,/g, parseValue);
+    const [etherValue, ethVIdx] = cutStr(ethscan, ethIdx, 'col-md-8', '>', '<span', 0, /\s|\$|,/g, parseValue);
+
+    const [allTokensValue, atvIdx] = cutStr(ethscan, ethVIdx, 'availableBalanceDropdown', '>', '<span', 0, />|\s|\$|,/g, parseValue);
+
+    // cut even more for token parsing
+    ethscan = ethscan.substring(atvIdx);
+
+    let lastTokenIdx = ethscan.indexOf('list-custom-ERC20');
+    let tokens: { symbol, img, amount, value }[] = [];
+    let moreTokens = lastTokenIdx >= 0;
+    while (moreTokens) {
+      const [img, imgIdx] = cutStr<string | null>(ethscan, lastTokenIdx, 'list-custom-ERC20', `<img src='`, `'`, null);
+      if (img === null) break;
+      const [amount, amtIdx] = cutStr(ethscan, imgIdx, `class='list-amount`, '>', ' ', 0, undefined, parseValue);
+      const [symbol, symIdx] = cutStr(ethscan, amtIdx, ' ', null, '</span>', null);
+      const [value, valIdx] = cutStr(ethscan, symIdx, '<span', '>', '</span>', 0, undefined, s => parseValue(s) || 0);
+      tokens.push({ symbol, img, amount, value });
+      lastTokenIdx = valIdx;
+    }
+    const tokenCount = tokens.length;
+    tokens = tokens.sort((a, b) => a.value - b.value).slice(-3).reverse();
+    tokens.forEach(t => t.img = 'https://etherscan.io' + t.img);
     const tokenValue = tokens.reduce((p, c) => p + c.value, 0);
 
-    if (ensPromise! !== undefined) await ensPromise;
+    if (!ensName!) {
+      const [parsedEns] = cutStr(ethscan, Math.max(lastTokenIdx, 1), `id='ensName'`, '> ', '</a>', null, /\s/g);
+      if (parsedEns) ensName = parsedEns;
+    }
+
     const response = {
       type: 'ADDRESS_RESPONSE',
       address: address!,
       ens: ensName!,
+      tag,
       ether,
       etherValue,
       tokens,
@@ -107,7 +165,19 @@ async function fetchAddress(message: any, sendResponse: (response?: any) => void
 }
 
 chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
-  if (message.type !== 'ADDRESS_REQUEST') return false;
-  fetchAddress(message, sendResponse);
-  return true;
+  switch (message.type) {
+    case 'ENS_RESOLVE':
+      resolveEnsName(message.id).then(address => {
+        if (address) {
+          sendResponse({ type: 'ENS_RESPONSE', address });
+        } else {
+          sendResponse({ type: 'ENS_RESPONSE', failed: true });
+        }
+      });
+      return true;
+    case 'ADDRESS_REQUEST':
+      fetchAddress(message, sendResponse);
+      return true;
+  }
+  return false
 });

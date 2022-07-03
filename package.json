@@ -2,7 +2,7 @@
   "scripts": {
     "tailwind": "tailwindcss -o dist/styles.css --content='./dist/*.html' -w",
     "copy-static": "node copy-static.js",
-    "bundle-worker": "esbuild src/worker.ts --bundle --outdir=./dist --sourcemap=inline --watch --inject:src/polyfills.js",
+    "bundle-worker": "esbuild src/worker.ts --bundle --format=esm --outdir=./ --sourcemap=inline --watch --inject:src/polyfills.js",
     "bundle": "esbuild src/content.ts src/popup.ts --bundle --outdir=./dist --sourcemap=inline --watch",
     "start": "concurrently 'npm:copy-static' 'npm:bundle' 'npm:bundle-worker'"
   },
@@ -10,12 +10,9 @@
     "@types/chrome": "0.0.191",
     "@typescript-eslint/eslint-plugin": "^5.30.0",
     "@typescript-eslint/parser": "^5.30.0",
-    "buffer": "^6.0.3",
     "concurrently": "^7.2.2",
     "esbuild": "^0.14.48",
     "eslint": "^8.18.0",
-    "ethjs-ens": "^2.0.1",
-    "ethjs-provider-http": "^0.1.6",
     "tailwindcss": "^3.1.4",
     "tippy.js": "^6.3.7"
   }

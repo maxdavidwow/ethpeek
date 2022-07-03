@@ -1,12 +1,25 @@
 {
-  "name": "Linkthereum",
-  "description": "Converts ethereum addresses to links and provides additional infomation",
+  "name": "EthPeek",
+  "description": "Sneak peek for ethereum (or ens) addresses (and it converts them to links).",
   "version": "1.0",
+  "action": {
+    "default_popup": "dist/popup.html",
+    "default_icon": {
+      "16": "dist/icon16.png",
+      "32": "dist/icon32.png",
+      "48": "dist/icon48.png",
+      "128": "dist/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "dist/icon16.png",
+    "32": "dist/icon32.png",
+    "48": "dist/icon48.png",
+    "128": "dist/icon128.png"
+  },
   "background": {
-    "scripts": [
-      "dist/hot-reload.js",
-      "dist/worker.js"
-    ]
+    "service_worker": "worker.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -21,11 +34,8 @@
       ]
     }
   ],
-  "web_accessible_resources": [
-    "dist/OpenSans-Regular.ttf"
-  ],
   "permissions": [
     "storage"
   ],
-  "manifest_version": 2
+  "manifest_version": 3
 }

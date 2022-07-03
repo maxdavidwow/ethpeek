@@ -1,2 +1,2 @@
-# linkthereum
+# EthPeek
 Chrome extension for Ethereum addresses

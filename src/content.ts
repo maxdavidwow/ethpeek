@@ -1,7 +1,7 @@
 import { hookTooltip } from "./tooltip";
 
 function isTooltip(node: HTMLElement) {
-  return node.className.includes('tooltip');
+  return node.className?.includes('tooltip');
 }
 function isUnsuitable(node: HTMLElement) {
   switch (node.tagName) {
@@ -42,8 +42,38 @@ function isInsideLink(el: Node) {
     el.parentElement?.parentElement?.parentElement?.tagName === 'A';
 }
 
+function handleEthlink(child: HTMLSpanElement, insideLink: boolean) {
+  const id = child.innerText.trim().toLowerCase();
+  const isEns = !id.startsWith('0x');
+  if (isEns) {
+    chrome.runtime.sendMessage({
+      type: 'ENS_RESOLVE',
+      id
+    }, (resolved: { address: string, failed?: boolean }) => {
+      if (resolved.failed) return;
+      hookTooltip(child, resolved.address);
+      if (!insideLink) {
+        child.className = 'styled';
+        const a = document.createElement('a');
+        a.href = `https://etherscan.io/address/${resolved.address}`;
+        a.innerText = id;
+        child.childNodes[0].replaceWith(a);
+      }
+    });
+  } else {
+    hookTooltip(child, id);
+    if (!insideLink) {
+      (child as Element).className = 'styled';
+      const a = document.createElement('a');
+      if (!isEns) a.href = `https://etherscan.io/address/${id}`;
+      a.innerText = id;
+      child.childNodes[0].replaceWith(a);
+    }
+  }
+}
+
 function scan(nodeToScan: Node) {
-  const start = performance.now();
+  // const start = performance.now();
   const replacements: [string, Text][] = [];
   const tw = document.createTreeWalker(nodeToScan, NodeFilter.SHOW_TEXT, null);
   let node = tw.nextNode() as Text;
@@ -67,15 +97,7 @@ function scan(nodeToScan: Node) {
     const insideLink = isInsideLink(replacement[1] as Node);
     for (const child of d.childNodes) {
       if ((child as Element)?.tagName === 'ETHLINK') {
-        hookTooltip(child as HTMLSpanElement);
-        if (!insideLink) {
-          (child as Element).className = 'styled';
-          const id = (child as HTMLSpanElement).innerText;
-          const a = document.createElement('a');
-          a.href = id.startsWith('0x') ? `https://etherscan.io/address/${id}` : `https://etherscan.io/enslookup-search?search=${id}`;
-          a.innerText = id;
-          child.childNodes[0].replaceWith(a);
-        }
+        handleEthlink(child as HTMLSpanElement, insideLink);
       }
     }
     replacement[1].replaceWith(...d.childNodes);
@@ -86,8 +108,8 @@ function scan(nodeToScan: Node) {
   // }
 }
 
-// initial scan
 requestIdleCallback(() => {
+  // initial scan
   scan(document.body);
 
   new MutationObserver(mutationList => {
