@@ -1,7 +1,7 @@
 import { hookTooltip } from "./tooltip";
 
 function isTooltip(node: HTMLElement) {
-  return node.className?.includes('tooltip');
+  return node.className?.includes?.('tooltip');
 }
 function isUnsuitable(node: HTMLElement) {
   switch (node.tagName) {
