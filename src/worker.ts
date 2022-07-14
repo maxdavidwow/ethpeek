@@ -34,7 +34,7 @@ function cutStr<T = string>(str: string, startIdx: number, from: string, fromExp
 }
 
 let ENS_MAP: { [addressOrEns: string]: string | Promise<string | null> } = {};
-chrome.storage.sync.get('ensCache', storage => ENS_MAP = storage.ensCache);
+chrome.storage.sync.get('ensCache', storage => ENS_MAP = storage.ensCache ?? {});
 chrome.runtime.onSuspend.addListener(() => chrome.storage.sync.set({ ensCache: ENS_MAP }));
 
 async function resolveEnsName(id: string) {
